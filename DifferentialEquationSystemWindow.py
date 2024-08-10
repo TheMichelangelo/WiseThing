@@ -1,9 +1,6 @@
-import math
 import tkinter as tk
 import random
 
-import sympy as sp
-from scipy.optimize import fsolve
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
