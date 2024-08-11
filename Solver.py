@@ -46,8 +46,14 @@ class Solver:
         a_min_tau = min(float(item) for row in self.a_tau for item in row)
 
         a_solution = []
-        step_h = 0.1
+        step_h = 0.01
         points_amount = int((float(self.L2) - float(self.L1)) / step_h) + 1
+
+        variables = [f'a{i + 1}' for i in range(len(self.x0_vector))]
+        variable_string = ' '.join(variables)
+        variables_tuple = sp.symbols(variable_string)
+        symbols_dict = dict(zip(variables, variables_tuple))
+
         for i in range(0, len(self.x0_vector)):
             a_i_solution = [0] * points_amount
             a_equation_string = f"{self.a_d[i]}" \
@@ -62,6 +68,8 @@ class Solver:
                 a_substitute_equation = a_substitute_equation.replace(f"a{i + 1}",
                                                                       f"(a{i + 1} + {step_h}*(" + self.x0_vector[
                                                                           i] + "))")
+
+                a_substitute_equation = str(eval(a_substitute_equation, symbols_dict))
                 if str(tau) in self.a_tau[i]:
                     tau_index = self.a_tau[i].index(str(tau))
                     a_equation_string = a_equation_string + "+" + self.a_alpha[i][
@@ -71,10 +79,10 @@ class Solver:
                 if float(self.a_alpha[i][len(self.a_alpha[i]) - 1]) > 0 else a_equation_string + str(
                 self.a_alpha[i][len(self.a_alpha[i]) - 1]) + f"*a{i + 1}"
 
-            a_equation_string = a_equation_string.replace(".00", "").replace(".0", "").replace(",", ".").replace(
+            a_equation_string = a_equation_string.replace(".00", "").replace(",", ".").replace(
                 f"a{i + 1}", "a")
 
-            print(f"Full a{i} equation {a_equation_string}")
+            print(f"Full a{i + 1} equation {a_equation_string}")
 
             # we have build solution for one variable by substitution and want to find this one dot
             # Parse the equation string
@@ -84,29 +92,25 @@ class Solver:
             f_lambdified = sp.lambdify(a, equation, modules=['numpy'])
             # Solve the equation
             solution = fsolve(f_lambdified, 0.1)
-            # Print the solution
-            print(f"First found a in a{i} is {solution}")
-
             # So we have a_n in a_i. Lets find all other a_s
             a_i_solution[int(a_max_tau / step_h)] = float(solution[0])
             for a_i_index in range(int(a_max_tau / step_h), 0, -1):
                 find_prev_str = f"{a_i_solution[a_i_index]} - {step_h}*(" + self.x0_vector[i].replace(".00",
-                                                                                                          "").replace(
+                                                                                                      "").replace(
                     ".0", "").replace(",", ".").replace(f"a{i + 1}", f"{a_i_solution[a_i_index]}") + ")"
                 a_i_solution[a_i_index - 1] = eval(find_prev_str)
-
-            a_solution.append(a_i_solution)
             for a_i_index in range(int(a_max_tau / step_h) + 1, points_amount):
                 find_prev_str = f"a-{step_h}*(" + self.x0_vector[i].replace(".00",
-                                                                                                          "").replace(
-                    ".0", "").replace(",", ".").replace(f"a{i + 1}","a") + f")-{a_i_solution[a_i_index - 1]}"
+                                                                            "").replace(
+                    ".0", "").replace(",", ".").replace(f"a{i + 1}", "a") + f")-{a_i_solution[a_i_index - 1]}"
                 a = sp.symbols('a')
                 equation = eval(find_prev_str)
                 f_lambdified = sp.lambdify(a, equation, modules=['numpy'])
                 a_i_solution[a_i_index] = float(fsolve(f_lambdified, 0.1)[0])
-        print(a_solution)
+            a_solution.append(a_i_solution)
+            # Print the solution
+            print(f"First found a in a{i + 1} is {a_i_solution}")
         return a_solution
-
 
 
 def all_a_separate(self):
