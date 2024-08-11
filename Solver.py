@@ -45,13 +45,15 @@ class Solver:
         a_max_tau = max(float(item) for row in self.a_tau for item in row)
         a_min_tau = min(float(item) for row in self.a_tau for item in row)
 
+        a_solution = []
+        step_h = 0.1
+        points_amount = int((float(self.L2) - float(self.L1)) / step_h) + 1
         for i in range(0, len(self.x0_vector)):
+            a_i_solution = [0] * points_amount
             a_equation_string = f"{self.a_d[i]}" \
                 if float(self.a_d[i]) < 0 else f"-{self.a_d[i]}"
 
             a_substitute_equation = self.x0_vector[i]
-
-            step_h = 0.1
             a_substitute_amount = int((a_max_tau - a_min_tau) / step_h)
 
             for j in range(0, a_substitute_amount):
@@ -65,36 +67,46 @@ class Solver:
                     a_equation_string = a_equation_string + "+" + self.a_alpha[i][
                         tau_index] + "*(" + a_substitute_equation + ")"
 
-        a_equation_string = a_equation_string + "+" + str(self.a_alpha[i][len(self.a_alpha[i]) - 1]) + f"*a{i + 1}" \
-            if float(self.a_alpha[i][len(self.a_alpha[i]) - 1]) > 0 else a_equation_string + str(
-            self.a_alpha[i][len(self.a_alpha[i]) - 1]) + f"*a{i + 1}"
+            a_equation_string = a_equation_string + "+" + str(self.a_alpha[i][len(self.a_alpha[i]) - 1]) + f"*a{i + 1}" \
+                if float(self.a_alpha[i][len(self.a_alpha[i]) - 1]) > 0 else a_equation_string + str(
+                self.a_alpha[i][len(self.a_alpha[i]) - 1]) + f"*a{i + 1}"
 
-        a_equation_string = (a_equation_string.replace(".00", "").replace(".0", "")
-                             .replace(",", ".").replace(f"a{i + 1}", "a"))
+            a_equation_string = a_equation_string.replace(".00", "").replace(".0", "").replace(",", ".").replace(
+                f"a{i + 1}", "a")
 
-        print(f"Full a{i} equation {a_equation_string}")
+            print(f"Full a{i} equation {a_equation_string}")
 
-        # we have build solution for one variable by substitution and want to find this one dot
-        # Parse the equation string
-        a = sp.symbols('a')
-        equation = eval(a_equation_string)
-        # Convert the sympy equation to a numerical function
-        f_lambdified = sp.lambdify(a, equation, modules=['numpy'])
+            # we have build solution for one variable by substitution and want to find this one dot
+            # Parse the equation string
+            a = sp.symbols('a')
+            equation = eval(a_equation_string)
+            # Convert the sympy equation to a numerical function
+            f_lambdified = sp.lambdify(a, equation, modules=['numpy'])
+            # Solve the equation
+            solution = fsolve(f_lambdified, 0.1)
+            # Print the solution
+            print(f"First found a in a{i} is {solution}")
 
-        # Define a wrapper function for fsolve
-        def equation_wrapper(a_value):
-            return f_lambdified(a_value)
+            # So we have a_n in a_i. Lets find all other a_s
+            a_i_solution[int(a_max_tau / step_h)] = float(solution[0])
+            for a_i_index in range(int(a_max_tau / step_h), 0, -1):
+                find_prev_str = f"{a_i_solution[a_i_index]} - {step_h}*(" + self.x0_vector[i].replace(".00",
+                                                                                                          "").replace(
+                    ".0", "").replace(",", ".").replace(f"a{i + 1}", f"{a_i_solution[a_i_index]}") + ")"
+                a_i_solution[a_i_index - 1] = eval(find_prev_str)
 
-        # Initial guess for the solution
-        initial_guess = 0.1
+            a_solution.append(a_i_solution)
+            for a_i_index in range(int(a_max_tau / step_h) + 1, points_amount):
+                find_prev_str = f"a-{step_h}*(" + self.x0_vector[i].replace(".00",
+                                                                                                          "").replace(
+                    ".0", "").replace(",", ".").replace(f"a{i + 1}","a") + f")-{a_i_solution[a_i_index - 1]}"
+                a = sp.symbols('a')
+                equation = eval(find_prev_str)
+                f_lambdified = sp.lambdify(a, equation, modules=['numpy'])
+                a_i_solution[a_i_index] = float(fsolve(f_lambdified, 0.1)[0])
+        print(a_solution)
+        return a_solution
 
-        # Solve the equation
-        solution = fsolve(equation_wrapper, initial_guess)
-
-        # Print the solution
-        print(f"First found a in a{i} is {solution}")
-
-    pass
 
 
 def all_a_separate(self):
