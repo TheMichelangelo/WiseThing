@@ -1,13 +1,10 @@
-import math
-import random
-
 import sympy as sp
 from scipy.optimize import fsolve
 
 
 class Solver:
     def __init__(self, x0_vector, x1_vector, omega_vector, y_vector, a_tau, a_alpha, a_d, phi_tau, phi_alpha, phi_d,
-                 epsilon, L1, L2):
+                 epsilon, l1, l2):
         self.x0_vector = x0_vector
         self.x1_vector = x1_vector
         self.omega_vector = omega_vector
@@ -19,8 +16,8 @@ class Solver:
         self.phi_alpha = phi_alpha
         self.phi_d = phi_d
         self.epsilon = epsilon
-        self.L1 = L1
-        self.L2 = L2
+        self.L1 = l1
+        self.L2 = l2
         pass
 
     def solve(self):
@@ -55,7 +52,7 @@ class Solver:
         symbols_dict = dict(zip(variables, variables_tuple))
 
         for i in range(0, len(self.x0_vector)):
-            a_i_solution = [0] * points_amount
+            a_i_solution = [0.0] * points_amount
             a_equation_string = f"{self.a_d[i]}" \
                 if float(self.a_d[i]) < 0 else f"-{self.a_d[i]}"
 
@@ -92,7 +89,7 @@ class Solver:
             f_lambdified = sp.lambdify(a, equation, modules=['numpy'])
             # Solve the equation
             solution = fsolve(f_lambdified, 0.1)
-            # So we have a_n in a_i. Lets find all other a_s
+            # So we have a_n in a_i. Let's find all other a_s
             a_i_solution[int(a_max_tau / step_h)] = float(solution[0])
             for a_i_index in range(int(a_max_tau / step_h), 0, -1):
                 find_prev_str = f"{a_i_solution[a_i_index]} - {step_h}*(" + self.x0_vector[i].replace(".00",
@@ -110,24 +107,22 @@ class Solver:
             a_solution.append(a_i_solution)
             # Print the solution
             print(f"First found a in a{i + 1} is {a_i_solution}")
+        # On this step we have all a's, so we can calculate phi
         return a_solution
 
+    def all_a_separate(self):
+        for x_0, i in self.x0_vector, len(self.x0_vector):
+            for j in range(0, len(self.x0_vector)):
+                if j != i and x_0.contans(f"a{j}"):
+                    return False
+        for x_1, i in self.x1_vector, len(self.x1_vector):
+            for j in range(0, len(self.x1_vector)):
+                if j != i and x_1.contans(f"a{j}"):
+                    return False
+        return True
 
-def all_a_separate(self):
-    for x_0, i in self.x0_vector, len(self.x0_vector):
-        for j in range(0, len(self.x0_vector)):
-            if j != i and x_0.contans(f"a{j}"):
-                return False
-    for x_1, i in self.x1_vector, len(self.x1_vector):
-        for j in range(0, len(self.x1_vector)):
-            if j != i and x_1.contans(f"a{j}"):
-                return False
-    return True
+    def solve_simplified_system_for_one_point(self):
+        pass
 
-
-def solve_simplified_system_for_one_point(self):
-    pass
-
-
-def solve_system_for_one_point(self):
-    pass
+    def solve_system_for_one_point(self):
+        pass
