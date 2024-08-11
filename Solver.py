@@ -42,6 +42,9 @@ class Solver:
         a_max_tau = max(float(item) for row in self.a_tau for item in row)
         a_min_tau = min(float(item) for row in self.a_tau for item in row)
 
+        phi_max_tau = max(float(item) for row in self.phi_tau for item in row)
+        phi_min_tau = min(float(item) for row in self.phi_tau for item in row)
+
         a_solution = []
         step_h = 0.01
         points_amount = int((float(self.L2) - float(self.L1)) / step_h) + 1
@@ -108,7 +111,33 @@ class Solver:
             # Print the solution
             print(f"First found a in a{i + 1} is {a_i_solution}")
         # On this step we have all a's, so we can calculate phi
-        return a_solution
+        phi_solution = []
+        for i in range(0, len(self.omega_vector)):
+            # logic should be the same, we just should add a's on fly calculation
+            phi_i_solution = [0.0] * points_amount
+            phi_equation_string = f"{self.phi_d[i]}" \
+                if float(self.phi_d[i]) < 0 else f"-{self.phi_d[i]}"
+
+            phi_substitute_amount = int((phi_max_tau - phi_min_tau) / step_h)
+            # loop
+            for j in range(phi_substitute_amount):
+                pass
+
+            print(f"Full phi{i + 1} equation {phi_equation_string}")
+
+            # we have build solution for one variable by substitution and want to find this one dot
+            # Parse the equation string
+            phi = sp.symbols('phi')
+            equation = eval(phi_equation_string)
+            # Convert the sympy equation to a numerical function
+            f_lambdified = sp.lambdify(phi, equation, modules=['numpy'])
+            # Solve the equation
+            solution = fsolve(f_lambdified, 0.1)
+            phi_i_solution[int(phi_max_tau / step_h)] = float(solution[0])
+            phi_solution.append(phi_i_solution)
+            pass
+        simplified_solution = [a_solution, phi_solution]
+        return simplified_solution
 
     def all_a_separate(self):
         for x_0, i in self.x0_vector, len(self.x0_vector):
