@@ -13,7 +13,7 @@ from Solver import Solver
 
 def save_data_to_file(filename, x, y_averaged, y):
     with open(filename, 'w') as file:
-        file.write("tau, avaraged solution, real solution\n")  # Write header
+        file.write("tau, averaged solution, real solution\n")  # Write header
         for xi, y_averaged, yi in zip(x, y_averaged, y):
             file.write(f"{xi:.2f} | {y_averaged:.2f} | {yi:.2f}\n")  # Write data points
 
@@ -60,7 +60,7 @@ class DifferentialEquationSolver:
 
         self.print_user_system()
 
-    def solve_equation(self):
+    def solve_equation_old(self):
         new_window = tk.Toplevel(self.root)
         new_window.title("Графіки")
 
@@ -106,6 +106,66 @@ class DifferentialEquationSolver:
 
             ax.plot(t, phi_averaged)
             ax.plot(t, phi_real)
+            ax.set_title(f'$φ{j + 1}$')
+            ax.set_ylabel(f"φ{j + 1}")
+            ax.set_xlabel("τ")
+
+        # Adjust layout
+        fig.tight_layout()
+
+        # Show the figure
+        canvas = FigureCanvasTkAgg(fig, master=new_window)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        self.solve_simplified_equations()
+
+    def plot_equation(self, solution):
+        new_window = tk.Toplevel(self.root)
+        new_window.title("Графіки")
+
+        # Define the number of plots in each row
+        n = self.a_size_n  # Number of plots in the first row
+        m = self.phi_size_m  # Number of plots in the second row
+
+        width = f"{(n + m) * 220}x{(n + m) * 220}"
+        new_window.geometry(width)
+
+        # Create a figure with a specific size and DPI
+        fig = Figure(figsize=(12, 6), dpi=100)
+
+        # Create subplots in the first row
+        for i in range(n):
+            ax = fig.add_subplot(2, n, i + 1)  # 2 rows, n columns, i+1 is the subplot index
+            ax.set_title(f'a{i + 1} plot')  # Set title for each subplot
+            # Plot some data or customize each subplot as needed
+
+            # Generate data for the plots
+            t = np.linspace(self.L1, self.L2, int((self.L2 - self.L1) / 0.01))
+            #a_averaged = np.exp(-random.randint(2, 17) * t) + np.cos(random.randint(1, 10) * t)
+            #a_real = a_averaged + random.randint(-10, 10) / 100
+
+            #save_data_to_file(f"solutions/a_{i}_solution", t, a_averaged, a_real)
+
+            ax.plot(t, solution[0][i])
+            #ax.plot(t, a_real)
+            ax.set_title(f'$a{i + 1}$')
+            ax.set_ylabel(f"a{i + 1}")
+            ax.set_xlabel("τ")
+
+        # Create subplots in the second row
+        for j in range(m):
+            ax = fig.add_subplot(2, m, n + j + 1)  # 2 rows, m columns, n+j+1 is the subplot index
+            ax.set_title(f'φ{j + 1} plot')  # Set title for each subplot
+            # Plot some data or customize each subplot as needed
+            t = np.linspace(self.L1, self.L2, int((self.L2 - self.L1) / 0.01))
+            #phi_averaged = random.randint(-1, 1) * t * t - random.randint(-3, 3) * t + 1 / (random.randint(1, 10)) * t
+            #phi_real = phi_averaged + random.randint(-15, 15) / 100
+
+            #save_data_to_file(f"solutions/phi_{j}solution", t, phi_averaged, phi_real)
+
+            #ax.plot(t, phi_averaged)
+            ax.plot(t, solution[1][j])
             ax.set_title(f'$φ{j + 1}$')
             ax.set_ylabel(f"φ{j + 1}")
             ax.set_xlabel("τ")
@@ -166,6 +226,8 @@ class DifferentialEquationSolver:
             save_data_to_file(f"solutions/solution_a{counter}.txt", t, a_result, a_result)
         for phi_result in solve_result[1]:
             save_data_to_file(f"solutions/solution_phi{counter}.txt", t, phi_result, phi_result)
+
+        self.plot_equation(solve_result)
 
     # Print systems and inputs
 
