@@ -21,8 +21,7 @@ class Solver:
         pass
 
     def solve(self):
-        self.solve_simplified_system()
-        pass
+        return self.solve_simplified_system()
 
     '''
         For system da/dt = f(a,t) we use unseen newton method

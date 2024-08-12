@@ -141,7 +141,7 @@ class DifferentialEquationSolver:
             # Plot some data or customize each subplot as needed
 
             # Generate data for the plots
-            t = np.linspace(self.L1, self.L2, int((self.L2 - self.L1) / 0.01))
+            t = np.linspace(self.L1, self.L2, int((self.L2 - self.L1) / 0.01) + 1)
             #a_averaged = np.exp(-random.randint(2, 17) * t) + np.cos(random.randint(1, 10) * t)
             #a_real = a_averaged + random.randint(-10, 10) / 100
 
@@ -158,7 +158,7 @@ class DifferentialEquationSolver:
             ax = fig.add_subplot(2, m, n + j + 1)  # 2 rows, m columns, n+j+1 is the subplot index
             ax.set_title(f'φ{j + 1} plot')  # Set title for each subplot
             # Plot some data or customize each subplot as needed
-            t = np.linspace(self.L1, self.L2, int((self.L2 - self.L1) / 0.01))
+            t = np.linspace(self.L1, self.L2, int((self.L2 - self.L1) / 0.01) + 1)
             #phi_averaged = random.randint(-1, 1) * t * t - random.randint(-3, 3) * t + 1 / (random.randint(1, 10)) * t
             #phi_real = phi_averaged + random.randint(-15, 15) / 100
 
@@ -177,8 +177,6 @@ class DifferentialEquationSolver:
         canvas = FigureCanvasTkAgg(fig, master=new_window)
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-        self.solve_simplified_equations()
 
     def solve_simplified_equations(self):
         x0_vector = [entry.get() for i, entry in enumerate(self.X_entries) if
@@ -224,8 +222,11 @@ class DifferentialEquationSolver:
         t = np.linspace(self.L1, self.L2, int((self.L2 - self.L1) / 0.01))
         for a_result in solve_result[0]:
             save_data_to_file(f"solutions/solution_a{counter}.txt", t, a_result, a_result)
+            counter = counter + 1
+        counter = 1
         for phi_result in solve_result[1]:
             save_data_to_file(f"solutions/solution_phi{counter}.txt", t, phi_result, phi_result)
+            counter = counter + 1
 
         self.plot_equation(solve_result)
 
