@@ -11,6 +11,13 @@ from Solver import Solver
 # метод ньютона
 # апроксимація в вузлах
 
+def save_data_to_file(filename, x, y_averaged, y):
+    with open(filename, 'w') as file:
+        file.write("tau, avaraged solution, real solution\n")  # Write header
+        for xi, y_averaged, yi in zip(x, y_averaged, y):
+            file.write(f"{xi:.2f} | {y_averaged:.2f} | {yi:.2f}\n")  # Write data points
+
+
 class DifferentialEquationSolver:
     def __init__(self, root, n, points_n, m, points_m, l1, l2):
         self.root = root
@@ -78,7 +85,7 @@ class DifferentialEquationSolver:
             a_averaged = np.exp(-random.randint(2, 17) * t) + np.cos(random.randint(1, 10) * t)
             a_real = a_averaged + random.randint(-10, 10) / 100
 
-            self.save_data_to_file(f"solutions/a_{i}_solution", t, a_averaged, a_real)
+            save_data_to_file(f"solutions/a_{i}_solution", t, a_averaged, a_real)
 
             ax.plot(t, a_averaged)
             ax.plot(t, a_real)
@@ -95,7 +102,7 @@ class DifferentialEquationSolver:
             phi_averaged = random.randint(-1, 1) * t * t - random.randint(-3, 3) * t + 1 / (random.randint(1, 10)) * t
             phi_real = phi_averaged + random.randint(-15, 15) / 100
 
-            self.save_data_to_file(f"solutions/phi_{j}solution", t, phi_averaged, phi_real)
+            save_data_to_file(f"solutions/phi_{j}solution", t, phi_averaged, phi_real)
 
             ax.plot(t, phi_averaged)
             ax.plot(t, phi_real)
@@ -150,9 +157,15 @@ class DifferentialEquationSolver:
             phi_tau.append(phi_i)
             phi_beta.append(phi_beta_i)
 
-        solver = Solver(x0_vector, x1_vector, omega_vector, y_vector, a_tau, a_alpha, a_d, phi_tau, phi_beta, phi_d, "0.01", self.L1, self.L2)
+        solver = Solver(x0_vector, x1_vector, omega_vector, y_vector, a_tau, a_alpha, a_d, phi_tau, phi_beta, phi_d,
+                        "0.01", self.L1, self.L2)
         solve_result = solver.solve()
-        pass
+        counter = 1
+        t = np.linspace(self.L1, self.L2, int((self.L2 - self.L1) / 0.01))
+        for a_result in solve_result[0]:
+            save_data_to_file(f"solutions/solution_a{counter}.txt", t, a_result, a_result)
+        for phi_result in solve_result[1]:
+            save_data_to_file(f"solutions/solution_phi{counter}.txt", t, phi_result, phi_result)
 
     # Print systems and inputs
 
@@ -415,9 +428,3 @@ class DifferentialEquationSolver:
             self.print_labels(labels_info)
 
         return start_position_y + 25 * self.phi_size_m
-
-    def save_data_to_file(self, filename, x, y_averaged, y):
-        with open(filename, 'w') as file:
-            file.write("tau, avaraged solution, real solution\n")  # Write header
-            for xi, y_averaged, yi in zip(x, y_averaged, y):
-                file.write(f"{xi:.2f} | {y_averaged:.2f} | {yi:.2f}\n")  # Write data points
