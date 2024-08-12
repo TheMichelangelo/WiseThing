@@ -48,9 +48,9 @@ class SystemSizeWindow:
     def open_new_window(self):
         n_size = int(self.input_size_n.get())
         m_size = int(self.input_size_m.get())
-        L1 = int(self.input_L1.get())
-        L2 = int(self.input_L2.get())
+        l1 = int(self.input_L1.get())
+        l2 = int(self.input_L2.get())
 
         self.root.destroy()
         new_root = tk.Tk()
-        PointsNumberWindow(new_root, n_size, m_size, L1, L2)
+        PointsNumberWindow(new_root, n_size, m_size, l1, l2)

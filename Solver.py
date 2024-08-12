@@ -3,7 +3,7 @@ from scipy.optimize import fsolve
 
 
 class Solver:
-    def __init__(self, x0_vector, x1_vector, omega_vector, y_vector, a_tau, a_alpha, a_d, phi_tau, phi_alpha, phi_d,
+    def __init__(self, x0_vector, x1_vector, omega_vector, y_vector, a_tau, a_alpha, a_d, phi_tau, phi_beta, phi_d,
                  epsilon, l1, l2):
         self.x0_vector = x0_vector
         self.x1_vector = x1_vector
@@ -13,7 +13,7 @@ class Solver:
         self.a_alpha = a_alpha
         self.a_d = a_d
         self.phi_tau = phi_tau
-        self.phi_alpha = phi_alpha
+        self.phi_beta = phi_beta
         self.phi_d = phi_d
         self.epsilon = epsilon
         self.L1 = l1
@@ -53,6 +53,11 @@ class Solver:
         variable_string = ' '.join(variables)
         variables_tuple = sp.symbols(variable_string)
         symbols_dict = dict(zip(variables, variables_tuple))
+
+        phi_variables = [f'phi{i + 1}' for i in range(len(self.omega_vector))]
+        phi_variable_string = ' '.join(variables)
+        phi_variables_tuple = sp.symbols(variable_string)
+        phi_symbols_dict = dict(zip(variables, variables_tuple))
 
         for i in range(0, len(self.x0_vector)):
             a_i_solution = [0.0] * points_amount
@@ -118,15 +123,40 @@ class Solver:
             phi_equation_string = f"{self.phi_d[i]}" \
                 if float(self.phi_d[i]) < 0 else f"-{self.phi_d[i]}"
 
+            phi_substitute_equation = self.omega_vector[i]
             phi_substitute_amount = int((phi_max_tau - phi_min_tau) / step_h)
             # loop
+            '''
+                phi_n+1 = phi_n + h*(omega(a_n,tau_n+1)/epsilon)
+            '''
             for j in range(phi_substitute_amount):
+                tau = a_min_tau + j * step_h
+                phi_substitute_equation = phi_substitute_equation.replace("tau", str(tau))
+                phi_substitute_equation = phi_substitute_equation.replace(f"a{i + 1}",
+                                                                          str(a_solution[i][int(tau / step_h)]))
+                phi_substitute_equation = phi_substitute_equation.replace(f"phi{i + 1}",
+                                                                          f"(phi{i + 1} + {step_h}*(" +
+                                                                          self.omega_vector[
+                                                                              i] + f")/{self.epsilon})")
+
+                phi_substitute_equation = str(eval(phi_substitute_equation, phi_symbols_dict))
+                if str(tau) in self.phi_tau[i]:
+                    tau_index = self.phi_tau[i].index(str(tau))
+                    phi_equation_string = phi_equation_string + "+" + self.phi_beta[i][
+                        tau_index] + "*(" + phi_substitute_equation + ")"
                 pass
+            phi_equation_string = phi_equation_string + "+" + str(self.phi_beta[i][len(self.phi_beta[i]) - 1]) + f"*phi{i + 1}" \
+                if float(self.phi_beta[i][len(self.phi_beta[i]) - 1]) > 0 else phi_equation_string + str(
+                self.phi_beta[i][len(self.phi_beta[i]) - 1]) + f"*phi{i + 1}"
+
+            phi_equation_string = phi_equation_string.replace(".00", "").replace(",", ".").replace(
+                f"phi{i + 1}", "phi")
 
             print(f"Full phi{i + 1} equation {phi_equation_string}")
 
             # we have build solution for one variable by substitution and want to find this one dot
             # Parse the equation string
+
             phi = sp.symbols('phi')
             equation = eval(phi_equation_string)
             # Convert the sympy equation to a numerical function
@@ -135,7 +165,6 @@ class Solver:
             solution = fsolve(f_lambdified, 0.1)
             phi_i_solution[int(phi_max_tau / step_h)] = float(solution[0])
             phi_solution.append(phi_i_solution)
-            pass
         simplified_solution = [a_solution, phi_solution]
         return simplified_solution
 

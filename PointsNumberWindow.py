@@ -5,7 +5,7 @@ from DifferentialEquationSystemWindow import DifferentialEquationSolver
 
 
 class PointsNumberWindow:
-    def __init__(self, root, n, m, L1, L2):
+    def __init__(self, root, n, m, l1, l2):
         self.root = root
 
         size_down = max(250, (n + m + 2) * 25 + 125)
@@ -13,8 +13,8 @@ class PointsNumberWindow:
         self.root.geometry(f"500x{size_down}")
         self.n_size = n
         self.m_size = m
-        self.L1 = L1
-        self.L2 = L2
+        self.L1 = l1
+        self.L2 = l2
 
         # Add a label for system size parameters
         labels_info = [
@@ -61,5 +61,4 @@ class PointsNumberWindow:
 
         self.root.destroy()
         new_root = tk.Tk()
-        DifferentialEquationSolver(new_root, self.n_size, a_points_size, self.m_size, phi_points_size)
-
+        DifferentialEquationSolver(new_root, self.n_size, a_points_size, self.m_size, phi_points_size, self.L1, self.L2)

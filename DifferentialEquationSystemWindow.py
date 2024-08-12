@@ -12,7 +12,7 @@ from Solver import Solver
 # апроксимація в вузлах
 
 class DifferentialEquationSolver:
-    def __init__(self, root, n, points_n, m, points_m):
+    def __init__(self, root, n, points_n, m, points_m, l1, l2):
         self.root = root
         self.root.title("Differential Equation Solver")
         size_side_a = 50 + 2 * max(points_n) * 80 + 80
@@ -34,7 +34,8 @@ class DifferentialEquationSolver:
         self.beta_entries = []
         self.phi_tau_entries = []
         self.phi_d_entries = []
-        self.step_h = 0.1
+        self.L1 = l1
+        self.L2 = l2
 
         start_print_y = self.print_main_system()
         start_print_y = self.print_function_inputs(start_print_y)
@@ -149,7 +150,7 @@ class DifferentialEquationSolver:
             phi_tau.append(phi_i)
             phi_beta.append(phi_beta_i)
 
-        solver = Solver(x0_vector, x1_vector, omega_vector, y_vector, a_tau, a_alpha, a_d, phi_tau, phi_beta, phi_d)
+        solver = Solver(x0_vector, x1_vector, omega_vector, y_vector, a_tau, a_alpha, a_d, phi_tau, phi_beta, phi_d, "epsilon", self.L1, self.L2)
         solver.solve()
         pass
 
