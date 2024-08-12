@@ -150,8 +150,8 @@ class DifferentialEquationSolver:
             phi_tau.append(phi_i)
             phi_beta.append(phi_beta_i)
 
-        solver = Solver(x0_vector, x1_vector, omega_vector, y_vector, a_tau, a_alpha, a_d, phi_tau, phi_beta, phi_d, "epsilon", self.L1, self.L2)
-        solver.solve()
+        solver = Solver(x0_vector, x1_vector, omega_vector, y_vector, a_tau, a_alpha, a_d, phi_tau, phi_beta, phi_d, "0.01", self.L1, self.L2)
+        solve_result = solver.solve()
         pass
 
     # Print systems and inputs

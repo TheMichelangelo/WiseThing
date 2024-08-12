@@ -114,7 +114,7 @@ class Solver:
                 a_i_solution[a_i_index] = float(fsolve(f_lambdified, 0.1)[0])
             a_solution.append(a_i_solution)
             # Print the solution
-            print(f"First found a in a{i + 1} is {a_i_solution}")
+            print(f"Found  a{i + 1} : {a_i_solution}")
         # On this step we have all a's, so we can calculate phi
         phi_solution = []
         for i in range(0, len(self.omega_vector)):
@@ -145,7 +145,8 @@ class Solver:
                     phi_equation_string = phi_equation_string + "+" + self.phi_beta[i][
                         tau_index] + "*(" + phi_substitute_equation + ")"
                 pass
-            phi_equation_string = phi_equation_string + "+" + str(self.phi_beta[i][len(self.phi_beta[i]) - 1]) + f"*phi{i + 1}" \
+            phi_equation_string = phi_equation_string + "+" + str(
+                self.phi_beta[i][len(self.phi_beta[i]) - 1]) + f"*phi{i + 1}" \
                 if float(self.phi_beta[i][len(self.phi_beta[i]) - 1]) > 0 else phi_equation_string + str(
                 self.phi_beta[i][len(self.phi_beta[i]) - 1]) + f"*phi{i + 1}"
 
@@ -164,7 +165,27 @@ class Solver:
             # Solve the equation
             solution = fsolve(f_lambdified, 0.1)
             phi_i_solution[int(phi_max_tau / step_h)] = float(solution[0])
+            for phi_i_index in range(int(phi_max_tau / step_h), 0, -1):
+                find_prev_str = f"{phi_i_solution[phi_i_index]} - {step_h}*(" + self.omega_vector[i].replace(".00",
+                                                                                                             "").replace(
+                    ".0", "").replace(",", ".").replace(f"a{i + 1}", f"{a_solution[i][phi_i_index]}").replace(
+                    f"phi{i + 1}", f"{phi_i_solution[phi_i_index]}").replace(f"tau",
+                                                                             f"{phi_min_tau + step_h * phi_i_index}") + f")/{self.epsilon}"
+                phi_i_solution[phi_i_index - 1] = eval(find_prev_str)
+            for phi_i_index in range(int(phi_max_tau / step_h) + 1, points_amount):
+                find_prev_str = f"phi-{step_h}*(" + self.omega_vector[i].replace(".00",
+                                                                                 "").replace(
+                    ".0", "").replace(",", ".").replace(f"phi{i + 1}", "phi").replace(f"tau",
+                                                                                      f"{phi_min_tau + step_h * phi_i_index}").replace(
+                    f"a{i + 1}", f"{a_solution[i][phi_i_index]}") + f")-{phi_i_solution[phi_i_index - 1]}"
+                phi = sp.symbols('phi')
+                equation = eval(find_prev_str)
+                f_lambdified = sp.lambdify(phi, equation, modules=['numpy'])
+                phi_i_solution[phi_i_index] = float(fsolve(f_lambdified, 0.1)[0])
+            # Print the solution
+            print(f"Found phi{i + 1} : {phi_i_solution}")
             phi_solution.append(phi_i_solution)
+
         simplified_solution = [a_solution, phi_solution]
         return simplified_solution
 
