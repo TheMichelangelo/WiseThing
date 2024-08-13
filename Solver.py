@@ -147,7 +147,6 @@ class Solver:
                                                                                         "").replace(",", ".").replace(
                     "tau", str(tau_value))
                 find_next_strings[i] = find_next_strings[i] + " )"
-                print()
             sympy_eqs = [eval(eq, {}, symbols_dict) for eq in find_next_strings]
             f_lambdified = sp.lambdify(variables_tuple, sympy_eqs, modules=['numpy'])
             initial_guess = [0.5] * len(self.x0_vector)
@@ -155,8 +154,8 @@ class Solver:
             for ii in range(0, len(self.x0_vector)):
                 a_solution[ii][a_i_index] = float(solution[ii])
 
-            for i in range(len(a_solution)):
-                print(f"a{i + 1} solution {a_solution[i]}")
+        for i in range(len(a_solution)):
+            print(f"a{i + 1} solution {a_solution[i]}")
 
         # On this step we have all a's, so we can calculate phi
         phi_solution = []
