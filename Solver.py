@@ -134,7 +134,6 @@ class Solver:
             for ii in range(0, len(self.x0_vector)):
                 a_solution[ii][a_i_index] = float(solution[ii])
 
-        # a_n+1 = a_n + h f(n+1)
         find_next_strings = [""] * len(self.x0_vector)
         for a_i_index in range(int(a_max_tau / step_h) + 1, points_amount):
             for i in range(len(self.x0_vector)):
@@ -153,7 +152,6 @@ class Solver:
             f_lambdified = sp.lambdify(variables_tuple, sympy_eqs, modules=['numpy'])
             initial_guess = [0.5] * len(self.x0_vector)
             solution = fsolve(lambda vars: f_lambdified(*vars), initial_guess)
-            print(f"solution: {solution}")
             for ii in range(0, len(self.x0_vector)):
                 a_solution[ii][a_i_index] = float(solution[ii])
 
