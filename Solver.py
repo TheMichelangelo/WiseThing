@@ -104,7 +104,7 @@ class Solver:
             a_equation_strings[i] = str(eval(a_equation_strings[i], symbols_dict))
             print(f"Full a{i + 1} equation {a_equation_strings[i]}")
 
-        sympy_eqs = [eval(a_equation_strings[i], {}, symbols_dict) for eq in a_equation_strings]
+        sympy_eqs = [eval(eq, {}, symbols_dict) for eq in a_equation_strings]
         # Convert the sympy equation to a numerical function
         f_lambdified = sp.lambdify(variables_tuple, sympy_eqs, modules=['numpy'])
         # Solve the equation
@@ -116,23 +116,40 @@ class Solver:
         for i in range(0, len(self.x0_vector)):
             a_solution[i][int(a_max_tau / step_h)] = float(solution[i])
 
-        for i in range(0, 0):
-            for a_i_index in range(int(a_max_tau / step_h), 0, -1):
-                find_prev_str = f"{a_i_solution[a_i_index]} - {step_h}*(" + self.x0_vector[i].replace(".00",
-                                                                                                      "").replace(
-                    ".0", "").replace(",", ".").replace(f"a{i + 1}", f"{a_i_solution[a_i_index]}") + ")"
-                a_i_solution[a_i_index - 1] = eval(find_prev_str)
-            for a_i_index in range(int(a_max_tau / step_h) + 1, points_amount):
-                find_prev_str = f"a-{step_h}*(" + self.x0_vector[i].replace(".00",
-                                                                            "").replace(
-                    ".0", "").replace(",", ".").replace(f"a{i + 1}", "a") + f")-{a_i_solution[a_i_index - 1]}"
-                a = sp.symbols('a')
-                equation = eval(find_prev_str)
-                f_lambdified = sp.lambdify(a, equation, modules=['numpy'])
-                a_i_solution[a_i_index] = float(fsolve(f_lambdified, 0.1)[0])
-            a_solution.append(a_i_solution)
-            # Print the solution
-            print(f"Found  a{i + 1} : {a_i_solution}")
+        find_prev_strings = [""] * len(self.x0_vector)
+        for a_i_index in range(int(a_max_tau / step_h) - 1, -1, -1):
+            for i in range(len(self.x0_vector)):
+                find_prev_strings[i] = f"{a_solution[i][a_i_index + 1]} - {step_h}*(" \
+                                       + self.x0_vector[i].replace(".00", "").replace(",", ".").replace("tau", str(
+                    a_max_tau - step_h * (a_i_index + 1))) + ")"
+                for j in range(len(self.x0_vector)):
+                    find_prev_strings[i] = find_prev_strings[i].replace(f"a{i + 1}", f"{a_solution[i][a_i_index + 1]}")
+            sympy_eqs = [eval(eq, {}, symbols_dict) for eq in find_prev_strings]
+            f_lambdified = sp.lambdify(variables_tuple, sympy_eqs, modules=['numpy'])
+            initial_guess = [0.5] * len(self.x0_vector)
+            solution = fsolve(lambda vars: f_lambdified(*vars), initial_guess)
+            print(f"solution: {solution}")
+            for ii in range(0, len(self.x0_vector)):
+                a_solution[ii][a_i_index] = float(solution[ii])
+
+        #a_n+1 = a_n + h f(n+1)
+        find_next_strings = [""] * len(self.x0_vector)
+        for a_i_index in range(int(a_max_tau / step_h) + 1, points_amount):
+            for i in range(len(self.x0_vector)):
+                find_next_strings[i] = f"{a_solution[i][a_i_index-1]} + {step_h}*(" \
+                                       + self.x0_vector[i].replace(".00", "").replace(",", ".").replace("tau", str(
+                    a_max_tau + step_h * (a_i_index-int(a_max_tau / step_h)))) + f" - a{i+1})"
+            sympy_eqs = [eval(eq, {}, symbols_dict) for eq in find_next_strings]
+            f_lambdified = sp.lambdify(variables_tuple, sympy_eqs, modules=['numpy'])
+            initial_guess = [0.5] * len(self.x0_vector)
+            solution = fsolve(lambda vars: f_lambdified(*vars), initial_guess)
+            print(f"solution: {solution}")
+            for ii in range(0, len(self.x0_vector)):
+                a_solution[ii][a_i_index] = float(solution[ii])
+
+        for i in range(len(a_solution)):
+            print(f"a{i + 1} solution {a_solution[i]}")
+
         # On this step we have all a's, so we can calculate phi
         phi_solution = []
         for i in range(0, 0):  # , len(self.omega_vector)
