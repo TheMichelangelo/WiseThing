@@ -1,6 +1,8 @@
 import sympy as sp
 from scipy.optimize import fsolve
 
+import re
+
 
 class Solver:
     def __init__(self, x0_vector, x1_vector, omega_vector, y_vector, a_tau, a_alpha, a_d, phi_tau, phi_beta, phi_d,
@@ -58,46 +60,63 @@ class Solver:
         phi_variables_tuple = sp.symbols(variable_string)
         phi_symbols_dict = dict(zip(variables, variables_tuple))
 
+        modified_x1_vector = modified_strings = [re.sub(r'phi\d+', '0', s) for s in self.x1_vector]
+        modified_y1_vector = modified_strings = [re.sub(r'phi\d+', '0', s) for s in self.x1_vector]
+
+        a_substitute_amount = int((a_max_tau - a_min_tau) / step_h)
+        a_substitute_equations = []
+        for i in range(0, len(self.x0_vector)):
+            a_substitute_equations.append(self.x0_vector[i])
+
+        a_equation_strings = []
+        for i in range(0, len(self.x0_vector)):
+            a_equation_string = f"{self.a_d[i]}" if float(self.a_d[i]) < 0 else f"-{self.a_d[i]}"
+            a_equation_strings.append(a_equation_string)
+
         for i in range(0, len(self.x0_vector)):
             a_i_solution = [0.0] * points_amount
-            a_equation_string = f"{self.a_d[i]}" \
-                if float(self.a_d[i]) < 0 else f"-{self.a_d[i]}"
+            a_solution.append(a_i_solution)
 
-            a_substitute_equation = self.x0_vector[i]
-            a_substitute_amount = int((a_max_tau - a_min_tau) / step_h)
+        for i in range(0, a_substitute_amount):
+            tau = a_max_tau - i * step_h
+            for j in range(0, len(self.x0_vector)):
+                a_substitute_equations[j] = a_substitute_equations[j].replace("tau", str(tau))
+                for a_index_replace in range(0, len(self.x0_vector)):
+                    a_substitute_equations[j] = a_substitute_equations[j].replace(
+                        f"a{a_index_replace + 1}",
+                        f"(a{a_index_replace + 1} + {step_h}*(" + self.x0_vector[a_index_replace] + "))")
+                    a_substitute_equations[j] = a_substitute_equations[j].replace("tau", str(tau))
+                a_substitute_equations[j] = str(eval(a_substitute_equations[j], symbols_dict))
+                if str(tau) in self.a_tau[j]:
+                    tau_index = self.a_tau[j].index(str(tau))
+                    a_equation_strings[i] = a_equation_strings[i] + "+" + self.a_alpha[j][tau_index] + "*(" + \
+                                            a_substitute_equations[j] + ")"
 
-            for j in range(0, a_substitute_amount):
-                tau = a_min_tau + j * step_h
-                a_substitute_equation = a_substitute_equation.replace("tau", str(tau))
-                a_substitute_equation = a_substitute_equation.replace(f"a{i + 1}",
-                                                                      f"(a{i + 1} + {step_h}*(" + self.x0_vector[
-                                                                          i] + "))")
+        for i in range(0, len(self.x0_vector)):
+            if float(self.a_alpha[i][len(self.a_alpha[i]) - 1]) > 0:
+                a_equation_strings[i] = a_equation_strings[i] + "+" + str(
+                    self.a_alpha[i][len(self.a_alpha[i]) - 1]) + f"*a{i + 1}"
+            else:
+                a_equation_strings[i] = a_equation_strings[i] + str(
+                    self.a_alpha[i][len(self.a_alpha[i]) - 1]) + f"*a{i + 1}"
+            a_equation_strings[i] = a_equation_strings[i].replace(".00", "").replace(",", ".").replace("tau",
+                                                                                                       f"{a_min_tau}")
+            a_equation_strings[i] = str(eval(a_equation_strings[i], symbols_dict))
+            print(f"Full a{i + 1} equation {a_equation_strings[i]}")
 
-                a_substitute_equation = str(eval(a_substitute_equation, symbols_dict))
-                if str(tau) in self.a_tau[i]:
-                    tau_index = self.a_tau[i].index(str(tau))
-                    a_equation_string = a_equation_string + "+" + self.a_alpha[i][
-                        tau_index] + "*(" + a_substitute_equation + ")"
+        sympy_eqs = [eval(a_equation_strings[i], {}, symbols_dict) for eq in a_equation_strings]
+        # Convert the sympy equation to a numerical function
+        f_lambdified = sp.lambdify(variables_tuple, sympy_eqs, modules=['numpy'])
+        # Solve the equation
+        initial_guess = [0.5] * len(self.x0_vector)
 
-            a_equation_string = a_equation_string + "+" + str(self.a_alpha[i][len(self.a_alpha[i]) - 1]) + f"*a{i + 1}" \
-                if float(self.a_alpha[i][len(self.a_alpha[i]) - 1]) > 0 else a_equation_string + str(
-                self.a_alpha[i][len(self.a_alpha[i]) - 1]) + f"*a{i + 1}"
+        solution = fsolve(lambda vars: f_lambdified(*vars), initial_guess)
+        print(f"solution: {solution}")
+        # So we have a_n in a_i. Let's find all other a_s
+        for i in range(0, len(self.x0_vector)):
+            a_i_solution[i][int(a_max_tau / step_h)] = float(solution[i][0])
 
-            a_equation_string = a_equation_string.replace(".00", "").replace(",", ".").replace(
-                f"a{i + 1}", "a")
-
-            print(f"Full a{i + 1} equation {a_equation_string}")
-
-            # we have build solution for one variable by substitution and want to find this one dot
-            # Parse the equation string
-            a = sp.symbols('a')
-            equation = eval(a_equation_string)
-            # Convert the sympy equation to a numerical function
-            f_lambdified = sp.lambdify(a, equation, modules=['numpy'])
-            # Solve the equation
-            solution = fsolve(f_lambdified, 0.1)
-            # So we have a_n in a_i. Let's find all other a_s
-            a_i_solution[int(a_max_tau / step_h)] = float(solution[0])
+        for i in range(0, 0):
             for a_i_index in range(int(a_max_tau / step_h), 0, -1):
                 find_prev_str = f"{a_i_solution[a_i_index]} - {step_h}*(" + self.x0_vector[i].replace(".00",
                                                                                                       "").replace(
@@ -116,7 +135,7 @@ class Solver:
             print(f"Found  a{i + 1} : {a_i_solution}")
         # On this step we have all a's, so we can calculate phi
         phi_solution = []
-        for i in range(0, len(self.omega_vector)):
+        for i in range(0, 0):  # , len(self.omega_vector)
             # logic should be the same, we just should add a's on fly calculation
             phi_i_solution = [0.0] * points_amount
             phi_equation_string = f"{self.phi_d[i]}" \
@@ -198,9 +217,3 @@ class Solver:
                 if j != i and x_1.contans(f"a{j}"):
                     return False
         return True
-
-    def solve_simplified_system_for_one_point(self):
-        pass
-
-    def solve_system_for_one_point(self):
-        pass
