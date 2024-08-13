@@ -89,7 +89,7 @@ class Solver:
                 a_substitute_equations[j] = str(eval(a_substitute_equations[j], symbols_dict))
                 if str(tau) in self.a_tau[j]:
                     tau_index = self.a_tau[j].index(str(tau))
-                    a_equation_strings[i] = a_equation_strings[i] + "+" + self.a_alpha[j][tau_index] + "*(" + \
+                    a_equation_strings[j] = a_equation_strings[j] + "+" + self.a_alpha[j][tau_index] + "*(" + \
                                             a_substitute_equations[j] + ")"
 
         for i in range(0, len(self.x0_vector)):
@@ -114,7 +114,7 @@ class Solver:
         print(f"solution: {solution}")
         # So we have a_n in a_i. Let's find all other a_s
         for i in range(0, len(self.x0_vector)):
-            a_i_solution[i][int(a_max_tau / step_h)] = float(solution[i][0])
+            a_solution[i][int(a_max_tau / step_h)] = float(solution[i])
 
         for i in range(0, 0):
             for a_i_index in range(int(a_max_tau / step_h), 0, -1):
