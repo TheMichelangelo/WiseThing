@@ -113,7 +113,6 @@ class Solver:
         initial_guess = [0.5] * len(self.x0_vector)
 
         solution = fsolve(lambda vars: f_lambdified(*vars), initial_guess)
-        print(f"solution: {solution}")
         # So we have a_n in a_i. Let's find all other a_s
         for i in range(0, len(self.x0_vector)):
             a_solution[i][int(a_max_tau / step_h)] = float(solution[i])
