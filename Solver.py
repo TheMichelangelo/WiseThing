@@ -1,3 +1,5 @@
+import math
+
 import sympy as sp
 from scipy.optimize import fsolve
 
@@ -119,26 +121,34 @@ class Solver:
         find_prev_strings = [""] * len(self.x0_vector)
         for a_i_index in range(int(a_max_tau / step_h) - 1, -1, -1):
             for i in range(len(self.x0_vector)):
-                find_prev_strings[i] = f"{a_solution[i][a_i_index + 1]} - {step_h}*(" \
+                find_prev_strings[i] = f"a{i + 1} - {step_h}*(" \
                                        + self.x0_vector[i].replace(".00", "").replace(",", ".").replace("tau", str(
-                    a_max_tau - step_h * (a_i_index + 1))) + ")"
+                    a_max_tau - step_h * (int(a_max_tau / step_h) - a_i_index))) + ")"
                 for j in range(len(self.x0_vector)):
                     find_prev_strings[i] = find_prev_strings[i].replace(f"a{i + 1}", f"{a_solution[i][a_i_index + 1]}")
+                find_prev_strings[i] = find_prev_strings[i] + f"-a{i + 1}"
             sympy_eqs = [eval(eq, {}, symbols_dict) for eq in find_prev_strings]
             f_lambdified = sp.lambdify(variables_tuple, sympy_eqs, modules=['numpy'])
             initial_guess = [0.5] * len(self.x0_vector)
             solution = fsolve(lambda vars: f_lambdified(*vars), initial_guess)
-            print(f"solution: {solution}")
             for ii in range(0, len(self.x0_vector)):
                 a_solution[ii][a_i_index] = float(solution[ii])
 
-        #a_n+1 = a_n + h f(n+1)
+        # a_n+1 = a_n + h f(n+1)
         find_next_strings = [""] * len(self.x0_vector)
         for a_i_index in range(int(a_max_tau / step_h) + 1, points_amount):
             for i in range(len(self.x0_vector)):
-                find_next_strings[i] = f"{a_solution[i][a_i_index-1]} + {step_h}*(" \
-                                       + self.x0_vector[i].replace(".00", "").replace(",", ".").replace("tau", str(
-                    a_max_tau + step_h * (a_i_index-int(a_max_tau / step_h)))) + f" - a{i+1})"
+                if a_solution[i][a_i_index - 1] > 0:
+                    find_next_strings[i] = f"-{a_solution[i][a_i_index - 1]}"
+                else:
+                    find_next_strings[i] = f"{math.fabs(a_solution[i][a_i_index - 1])}"
+                tau_value = a_max_tau + step_h * (a_i_index - int(a_max_tau / step_h))
+                find_next_strings[i] = find_next_strings[i] + f" + a{i + 1} - {step_h}*("
+                find_next_strings[i] = find_next_strings[i] + self.x0_vector[i].replace(".00",
+                                                                                        "").replace(",", ".").replace(
+                    "tau", str(tau_value))
+                find_next_strings[i] = find_next_strings[i] + " )"
+                print()
             sympy_eqs = [eval(eq, {}, symbols_dict) for eq in find_next_strings]
             f_lambdified = sp.lambdify(variables_tuple, sympy_eqs, modules=['numpy'])
             initial_guess = [0.5] * len(self.x0_vector)
@@ -147,8 +157,8 @@ class Solver:
             for ii in range(0, len(self.x0_vector)):
                 a_solution[ii][a_i_index] = float(solution[ii])
 
-        for i in range(len(a_solution)):
-            print(f"a{i + 1} solution {a_solution[i]}")
+            for i in range(len(a_solution)):
+                print(f"a{i + 1} solution {a_solution[i]}")
 
         # On this step we have all a's, so we can calculate phi
         phi_solution = []
@@ -164,22 +174,22 @@ class Solver:
             '''
                 phi_n+1 = phi_n + h*(omega(a_n,tau_n+1)/epsilon)
             '''
-            for j in range(phi_substitute_amount):
+            for j in range(0):
                 tau = a_min_tau + j * step_h
-                phi_substitute_equation = phi_substitute_equation.replace("tau", str(tau))
-                phi_substitute_equation = phi_substitute_equation.replace(f"a{i + 1}",
-                                                                          str(a_solution[i][int(tau / step_h)]))
-                phi_substitute_equation = phi_substitute_equation.replace(f"phi{i + 1}",
-                                                                          f"(phi{i + 1} + {step_h}*(" +
-                                                                          self.omega_vector[
-                                                                              i] + f")/{self.epsilon})")
+            phi_substitute_equation = phi_substitute_equation.replace("tau", str(tau))
+            phi_substitute_equation = phi_substitute_equation.replace(f"a{i + 1}",
+                                                                      str(a_solution[i][int(tau / step_h)]))
+            phi_substitute_equation = phi_substitute_equation.replace(f"phi{i + 1}",
+                                                                      f"(phi{i + 1} + {step_h}*(" +
+                                                                      self.omega_vector[
+                                                                          i] + f")/{self.epsilon})")
 
-                phi_substitute_equation = str(eval(phi_substitute_equation, phi_symbols_dict))
-                if str(tau) in self.phi_tau[i]:
-                    tau_index = self.phi_tau[i].index(str(tau))
-                    phi_equation_string = phi_equation_string + "+" + self.phi_beta[i][
-                        tau_index] + "*(" + phi_substitute_equation + ")"
-                pass
+            phi_substitute_equation = str(eval(phi_substitute_equation, phi_symbols_dict))
+            if str(tau) in self.phi_tau[i]:
+                tau_index = self.phi_tau[i].index(str(tau))
+            phi_equation_string = phi_equation_string + "+" + self.phi_beta[i][
+                tau_index] + "*(" + phi_substitute_equation + ")"
+            pass
             phi_equation_string = phi_equation_string + "+" + str(
                 self.phi_beta[i][len(self.phi_beta[i]) - 1]) + f"*phi{i + 1}" \
                 if float(self.phi_beta[i][len(self.phi_beta[i]) - 1]) > 0 else phi_equation_string + str(
@@ -206,17 +216,17 @@ class Solver:
                     ".0", "").replace(",", ".").replace(f"a{i + 1}", f"{a_solution[i][phi_i_index]}").replace(
                     f"phi{i + 1}", f"{phi_i_solution[phi_i_index]}").replace(f"tau",
                                                                              f"{phi_min_tau + step_h * phi_i_index}") + f")/{self.epsilon}"
-                phi_i_solution[phi_i_index - 1] = eval(find_prev_str)
+            phi_i_solution[phi_i_index - 1] = eval(find_prev_str)
             for phi_i_index in range(int(phi_max_tau / step_h) + 1, points_amount):
                 find_prev_str = f"phi-{step_h}*(" + self.omega_vector[i].replace(".00",
                                                                                  "").replace(
                     ".0", "").replace(",", ".").replace(f"phi{i + 1}", "phi").replace(f"tau",
                                                                                       f"{phi_min_tau + step_h * phi_i_index}").replace(
                     f"a{i + 1}", f"{a_solution[i][phi_i_index]}") + f")-{phi_i_solution[phi_i_index - 1]}"
-                phi = sp.symbols('phi')
-                equation = eval(find_prev_str)
-                f_lambdified = sp.lambdify(phi, equation, modules=['numpy'])
-                phi_i_solution[phi_i_index] = float(fsolve(f_lambdified, 0.1)[0])
+            phi = sp.symbols('phi')
+            equation = eval(find_prev_str)
+            f_lambdified = sp.lambdify(phi, equation, modules=['numpy'])
+            phi_i_solution[phi_i_index] = float(fsolve(f_lambdified, 0.1)[0])
             # Print the solution
             print(f"Found phi{i + 1} : {phi_i_solution}")
             phi_solution.append(phi_i_solution)
@@ -224,13 +234,14 @@ class Solver:
         simplified_solution = [a_solution, phi_solution]
         return simplified_solution
 
-    def all_a_separate(self):
-        for x_0, i in self.x0_vector, len(self.x0_vector):
-            for j in range(0, len(self.x0_vector)):
-                if j != i and x_0.contans(f"a{j}"):
-                    return False
-        for x_1, i in self.x1_vector, len(self.x1_vector):
-            for j in range(0, len(self.x1_vector)):
-                if j != i and x_1.contans(f"a{j}"):
-                    return False
-        return True
+
+def all_a_separate(self):
+    for x_0, i in self.x0_vector, len(self.x0_vector):
+        for j in range(0, len(self.x0_vector)):
+            if j != i and x_0.contans(f"a{j}"):
+                return False
+    for x_1, i in self.x1_vector, len(self.x1_vector):
+        for j in range(0, len(self.x1_vector)):
+            if j != i and x_1.contans(f"a{j}"):
+                return False
+    return True
