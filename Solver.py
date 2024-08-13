@@ -155,8 +155,8 @@ class Solver:
             for ii in range(0, len(self.x0_vector)):
                 a_solution[ii][a_i_index] = float(solution[ii])
 
-            for i in range(len(a_solution)):
-                print(f"a{i + 1} solution {a_solution[i]}")
+        for i in range(len(a_solution)):
+            print(f"a{i + 1} solution {a_solution[i]}")
 
         # On this step we have all a's, so we can calculate phi
         phi_solution = []
